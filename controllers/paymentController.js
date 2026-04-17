@@ -1,12 +1,19 @@
-const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Payment = require('../models/Payment');
 const Booking = require('../models/Booking');
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Razorpay is optional - only initialize if keys are present
+let razorpay = null;
+try {
+  if (process.env.RAZORPAY_KEY_ID && !process.env.RAZORPAY_KEY_ID.includes('YOUR_')) {
+    const Razorpay = require('razorpay');
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  }
+} catch(e) {}
+
 
 // Create Razorpay order
 const createPaymentOrder = async (req, res) => {
