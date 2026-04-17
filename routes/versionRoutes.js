@@ -5,11 +5,11 @@ const router = express.Router();
 // APP VERSION CONTROL — Update this whenever you release a new version!
 // ─────────────────────────────────────────────────────────────────────────────
 const CURRENT_VERSION = {
-  version: '1.0.2',           // Fixed version!
-  versionCode: 3,             // Trigger the update again!
+  version: '1.0.3',           // Ultimate Fixed version!
+  versionCode: 4,             // Trigger the update!
   forceUpdate: false,
-  apkUrl: 'https://files.catbox.moe/wsswpj.apk',
-  releaseNotes: '🚀 Stability Update: Crash issues fixed + Digital Wallet & Referral features!',
+  apkUrl: 'https://files.catbox.moe/9nfkcz.apk',
+  releaseNotes: '🏆 ULTIMATE STABILITY: All crash issues fixed! Enjoy Digital Wallet, Refer & Earn, and more.',
   releasedAt: new Date().toISOString(),
 };
 
