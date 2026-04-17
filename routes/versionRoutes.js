@@ -5,11 +5,11 @@ const router = express.Router();
 // APP VERSION CONTROL — Update this whenever you release a new version!
 // ─────────────────────────────────────────────────────────────────────────────
 const CURRENT_VERSION = {
-  version: '1.0.3',           // Ultimate Fixed version!
-  versionCode: 4,             // Trigger the update!
+  version: '1.0.4',
+  versionCode: 5,
   forceUpdate: false,
-  apkUrl: 'https://files.catbox.moe/9nfkcz.apk',
-  releaseNotes: '🏆 ULTIMATE STABILITY: All crash issues fixed! Enjoy Digital Wallet, Refer & Earn, and more.',
+  apkUrl: 'https://files.catbox.moe/f50925.apk',
+  releaseNotes: '💰 Wallet + Refer & Earn is here! Click Download to install the new update.',
   releasedAt: new Date().toISOString(),
 };
 
