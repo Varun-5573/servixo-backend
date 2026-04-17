@@ -31,6 +31,8 @@ app.use('/api/workers', require('./routes/workerRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/ratings', require('./routes/ratingRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/version', require('./routes/versionRoutes'));
+
 
 // Health check
 app.get('/', (req, res) => {
