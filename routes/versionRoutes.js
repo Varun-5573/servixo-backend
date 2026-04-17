@@ -5,11 +5,11 @@ const router = express.Router();
 // APP VERSION CONTROL — Update this whenever you release a new version!
 // ─────────────────────────────────────────────────────────────────────────────
 const CURRENT_VERSION = {
-  version: '1.0.0',           // Match your current app version
-  versionCode: 1,             // Match your current app version code
+  version: '1.0.1',           // New version!
+  versionCode: 2,             // Trigger the update!
   forceUpdate: false,
-  apkUrl: 'https://github.com/Varun-5573/servixo-backend/releases/latest/download/servixo.apk',
-  releaseNotes: 'Everything is up to date!',
+  apkUrl: 'https://files.catbox.moe/q7okco.apk',
+  releaseNotes: '💰 Digital Wallet is here! Now you can see your balance and refer friends to earn.',
   releasedAt: new Date().toISOString(),
 };
 

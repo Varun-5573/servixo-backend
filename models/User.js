@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   },
   fcmToken: { type: String, default: '' },
   isActive: { type: Boolean, default: true },
+  referralCode: { type: String, unique: true, sparse: true },
   wallet: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
