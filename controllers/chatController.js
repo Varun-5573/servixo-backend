@@ -1,7 +1,14 @@
 const Message = require('../models/Message');
-const OpenAI = require('openai');
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// OpenAI is optional - only use if API key is provided
+let openai = null;
+try {
+  if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.includes('YOUR_')) {
+    const OpenAI = require('openai');
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+} catch(e) {}
+
 
 // Send message
 const sendMessage = async (req, res) => {
