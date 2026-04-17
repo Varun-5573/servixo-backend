@@ -5,11 +5,11 @@ const router = express.Router();
 // APP VERSION CONTROL — Update this whenever you release a new version!
 // ─────────────────────────────────────────────────────────────────────────────
 const CURRENT_VERSION = {
-  version: '1.0.1',           // Bump this number for each new release
-  versionCode: 2,             // Increment this integer for each new release
-  forceUpdate: false,         // Set to true to force ALL users to update
+  version: '1.0.0',           // Match your current app version
+  versionCode: 1,             // Match your current app version code
+  forceUpdate: false,
   apkUrl: 'https://github.com/Varun-5573/servixo-backend/releases/latest/download/servixo.apk',
-  releaseNotes: 'Bug fixes and performance improvements.',
+  releaseNotes: 'Everything is up to date!',
   releasedAt: new Date().toISOString(),
 };
 
