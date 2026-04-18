@@ -32,7 +32,8 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/ratings', require('./routes/ratingRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/version', require('./routes/versionRoutes'));
-
+app.use('/api/wallet', require('./routes/walletRoutes'));
+app.use('/api/referral', require('./routes/referralRoutes'));
 
 // Health check
 app.get('/', (req, res) => {

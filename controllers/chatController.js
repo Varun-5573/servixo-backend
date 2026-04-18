@@ -43,10 +43,10 @@ const sendMessage = async (req, res) => {
           }
           
           const autoReply = await Message.create({
-            senderId: 'bot',
+            senderId: 'admin',
             receiverId: req.user.id,
             message: botMsg,
-            senderType: 'bot'
+            senderType: 'admin'
           });
           
           io.to(`user_${req.user.id}`).emit('receive_message', autoReply);
