@@ -40,20 +40,27 @@ router.get('/all-workers', async (req, res) => {
 router.get('/active-customers', async (req, res) => {
   try {
     const Booking = require('../models/Booking');
-    const User = require('../models/User');
+    
     // Find active bookings
     const activeBookings = await Booking.find({ 
-      status: { $in: ['pending', 'accepted', 'ongoing'] } 
+      status: { $in: ['pending', 'accepted', 'ongoing', 'accepted'] } 
     }).populate('userId', 'name phone location profileImage');
 
-    const customers = activeBookings.map(b => ({
-      _id: b.userId?._id,
-      name: b.userId?.name,
-      location: b.userId?.location,
-      phone: b.userId?.phone,
-      service: b.service,
-      bookingId: b._id
-    })).filter(c => c._id); // Remove duplicates if multiple bookings? 
+    const customers = activeBookings.map(b => {
+      // Use booking location first, fallback to user profile location
+      const lat = b.location?.lat || b.userId?.location?.lat;
+      const lng = b.location?.lng || b.userId?.location?.lng;
+
+      return {
+        _id: b.userId?._id || b._id,
+        name: b.userId?.name || 'Customer',
+        location: { lat, lng },
+        phone: b.userId?.phone,
+        service: b.service,
+        bookingId: b._id,
+        status: b.status
+      };
+    }).filter(c => c.location.lat && c.location.lng); 
     
     res.json({ success: true, customers });
   } catch (err) {
