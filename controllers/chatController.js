@@ -51,7 +51,7 @@ const sendMessage = async (req, res) => {
           
           io.to(`user_${req.user.id}`).emit('receive_message', autoReply);
           io.to('admin_room').emit('receive_message', autoReply);
-        }, 1200);
+        }, 0);
       }
     }
 
