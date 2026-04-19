@@ -5,9 +5,9 @@ const router = express.Router();
 // APP VERSION CONTROL — Update this whenever you release a new version!
 // ─────────────────────────────────────────────────────────────────────────────
 const CURRENT_VERSION = {
-  version: '1.0.6',
-  versionCode: 8,
-  forceUpdate: true,
+  version: '1.0.5',
+  versionCode: 6,
+  forceUpdate: false,
   apkUrl: 'https://files.catbox.moe/o1j1iy.apk',
   releaseNotes: '📍 Live GPS Tracking & Maps fixed! Click Download to install the latest version.',
   releasedAt: new Date().toISOString(),
