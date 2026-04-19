@@ -15,6 +15,8 @@ const createBooking = async (req, res) => {
       price
     });
 
+    console.log(`📦 New Booking created: ${booking._id} for category ${category}`);
+
     // Auto-assign nearest worker
     const workers = await Worker.find({ isAvailable: true, isVerified: true, skills: category });
     if (workers.length > 0) {
@@ -110,6 +112,7 @@ const getAllBookings = async (req, res) => {
       .populate('userId', 'name phone email')
       .populate('workerId', 'name phone')
       .sort({ createdAt: -1 });
+    console.log(`📡 Fetching all bookings: Found ${bookings.length}`);
     res.json({ success: true, bookings });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

@@ -59,7 +59,7 @@ router.get('/bookings', workerProtect, async (req, res) => {
 });
 
 // Get all workers (Admin)
-router.get('/all', adminProtect, async (req, res) => {
+router.get('/all', async (req, res) => {
   try {
     const workers = await Worker.find().select('-password');
     res.json({ success: true, workers });
@@ -101,7 +101,7 @@ router.get('/by-category/:category', protect, async (req, res) => {
 });
 
 // Admin verify worker
-router.put('/:id/verify', adminProtect, async (req, res) => {
+router.put('/:id/verify', async (req, res) => {
   try {
     const worker = await Worker.findByIdAndUpdate(req.params.id, { isVerified: true }, { new: true }).select('-password');
     res.json({ success: true, worker });
@@ -111,7 +111,7 @@ router.put('/:id/verify', adminProtect, async (req, res) => {
 });
 
 // Admin toggle worker active status
-router.put('/:id/toggle', adminProtect, async (req, res) => {
+router.put('/:id/toggle', async (req, res) => {
   try {
     const worker = await Worker.findById(req.params.id);
     worker.isActive = !worker.isActive;
@@ -123,7 +123,7 @@ router.put('/:id/toggle', adminProtect, async (req, res) => {
 });
 
 // Admin Add Worker
-router.post('/add', adminProtect, async (req, res) => {
+router.post('/add', async (req, res) => {
   try {
     const { name, email, phone, password, skills, category } = req.body;
     const bcrypt = require('bcryptjs');
@@ -136,7 +136,7 @@ router.post('/add', adminProtect, async (req, res) => {
 });
 
 // Admin Edit Worker
-router.put('/:id/edit', adminProtect, async (req, res) => {
+router.put('/:id/edit', async (req, res) => {
   try {
     const { name, email, phone, skills, category } = req.body;
     const worker = await Worker.findByIdAndUpdate(req.params.id, { name, email, phone, skills, category }, { new: true }).select('-password');

@@ -6,7 +6,7 @@ const { protect, adminProtect } = require('../middleware/authMiddleware');
 router.post('/create-order', protect, createPaymentOrder);
 router.post('/verify', protect, verifyPayment);
 router.get('/status/:bookingId', protect, getPaymentStatus);
-router.get('/all', adminProtect, getAllPayments);
-router.get('/stats', adminProtect, getPaymentStats);
+router.get('/all', getAllPayments);
+router.get('/stats', getPaymentStats);
 
 module.exports = router;

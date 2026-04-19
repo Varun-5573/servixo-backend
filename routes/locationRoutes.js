@@ -36,4 +36,29 @@ router.get('/all-workers', async (req, res) => {
   }
 });
 
+// Get all active customers locations (Admin map)
+router.get('/active-customers', async (req, res) => {
+  try {
+    const Booking = require('../models/Booking');
+    const User = require('../models/User');
+    // Find active bookings
+    const activeBookings = await Booking.find({ 
+      status: { $in: ['pending', 'accepted', 'ongoing'] } 
+    }).populate('userId', 'name phone location profileImage');
+
+    const customers = activeBookings.map(b => ({
+      _id: b.userId?._id,
+      name: b.userId?.name,
+      location: b.userId?.location,
+      phone: b.userId?.phone,
+      service: b.service,
+      bookingId: b._id
+    })).filter(c => c._id); // Remove duplicates if multiple bookings? 
+    
+    res.json({ success: true, customers });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

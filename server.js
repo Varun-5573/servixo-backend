@@ -70,15 +70,15 @@ io.on('connection', (socket) => {
   // Worker live location update
   socket.on('worker_location_update', async (data) => {
     const { workerId, lat, lng, bookingId } = data;
-    // Broadcast to user tracking this worker
-    if (bookingId) {
-      io.to(`booking_${bookingId}`).emit('live_location', { workerId, lat, lng });
-    }
-    // Broadcast to admin
-    io.to('admin_room').emit('worker_location', { workerId, lat, lng });
-
-    // Update in DB
     try {
+      // Broadcast to user tracking this worker
+      if (bookingId) {
+        io.to(`booking_${bookingId}`).emit('live_location', { workerId, lat, lng });
+      }
+      // Broadcast to admin
+      io.to('admin_room').emit('worker_location', { workerId, lat, lng });
+
+      // Update in DB
       const Worker = require('./models/Worker');
       await Worker.findByIdAndUpdate(workerId, {
         'currentLocation.lat': lat,
@@ -86,6 +86,25 @@ io.on('connection', (socket) => {
         'currentLocation.updatedAt': new Date()
       });
     } catch (e) {}
+  });
+
+  // User live location update
+  socket.on('user_location_update', async (data) => {
+    const { userId, lat, lng } = data;
+    console.log(`📍 Live GPS from User ${userId}: ${lat}, ${lng}`);
+    // Broadcast to admin
+    io.to('admin_room').emit('user_location', { userId, lat, lng });
+
+    // Update in DB
+    try {
+      const User = require('./models/User');
+      await User.findByIdAndUpdate(userId, {
+        'location.lat': lat,
+        'location.lng': lng
+      });
+    } catch (e) {
+      console.error('Error updating user location:', e);
+    }
   });
 
   // User tracking a booking
@@ -180,9 +199,23 @@ const initDB = async () => {
         console.log(`🚀 Servixo Server running on port ${process.env.PORT || 5000}`);
       });
     })
-    .catch(err => {
-      console.error('❌ MongoDB connection error:', err.message);
-      process.exit(1);
+    .catch(async (err) => {
+      console.error('❌ MongoDB primary connection error:', err.message);
+      console.log('⚠️ Falling back to In-Memory MongoDB for local testing...');
+      try {
+        const { MongoMemoryServer } = require('mongodb-memory-server');
+        const mongoServer = await MongoMemoryServer.create();
+        const fallbackUri = mongoServer.getUri();
+        await mongoose.connect(fallbackUri);
+        console.log('✅ Connected to In-Memory MongoDB');
+        await autoSeed();
+        server.listen(process.env.PORT || 5000, '0.0.0.0', () => {
+          console.log(`🚀 Servixo Server running on port ${process.env.PORT || 5000} (In-Memory)`);
+        });
+      } catch (fallbackErr) {
+        console.error('❌ Failed to start even with In-Memory DB:', fallbackErr.message);
+        process.exit(1);
+      }
     });
 };
 
@@ -190,39 +223,66 @@ const autoSeed = async () => {
   try {
     const Worker = require('./models/Worker');
     const User = require('./models/User');
+    const Booking = require('./models/Booking');
+    const Payment = require('./models/Payment');
     const bcrypt = require('bcryptjs');
 
-    const workerEmail = 'pittalaadithyavarun555@gmail.com';
-    const userEmail = 'pittala@gmail.com';
     const password = 'Password@123';
+    const hashed = await bcrypt.hash(password, 10);
 
-    const workerExists = await Worker.findOne({ email: workerEmail });
-    if (!workerExists) {
-      const hashed = await bcrypt.hash(password, 10);
-      await Worker.create({
-        name: 'Varun (Professional)',
-        email: workerEmail,
-        phone: '9999999999',
-        password: hashed,
-        skills: ['Plumbing', 'Electrical'],
-        category: 'Maintenance',
-        isAvailable: true,
-        isActive: true,
-        currentLocation: { lat: 17.3850, lng: 78.4867 }
-      });
-      console.log('👷 Default Worker seeded');
+    // Seed Workers if needed
+    const workerCount = await Worker.countDocuments();
+    if (workerCount < 3) {
+      await Worker.create([
+        {
+          name: 'Varun (Plumber)', email: 'pittalaadithyavarun555@gmail.com', phone: '9999999999',
+          password: hashed, skills: ['Plumbing'], category: 'Maintenance',
+          isAvailable: true, isVerified: true, isActive: true, currentLocation: { lat: 17.3850, lng: 78.4867 }
+        },
+        {
+          name: 'Siri (Electrician)', email: 'siri@gmail.com', phone: '8888888888',
+          password: hashed, skills: ['Electrical'], category: 'Maintenance',
+          isAvailable: true, isVerified: true, isActive: true, currentLocation: { lat: 17.4050, lng: 78.4967 }
+        },
+        {
+          name: 'Bunny (Cleaning)', email: 'bunny@gmail.com', phone: '7777777777',
+          password: hashed, skills: ['Cleaning'], category: 'Home Services',
+          isAvailable: true, isVerified: true, isActive: true, currentLocation: { lat: 17.3750, lng: 78.4767 }
+        }
+      ]);
+      console.log('👷 Workers seeded (Verified)');
     }
 
-    const userExists = await User.findOne({ email: userEmail });
-    if (!userExists) {
-      const hashed = await bcrypt.hash(password, 10);
-      await User.create({
-        name: 'Varun Customer',
-        email: userEmail,
-        password: hashed,
-        phone: '1234567890'
-      });
-      console.log('👤 Default User seeded');
+    // Seed Users if needed
+    const userCount = await User.countDocuments();
+    if (userCount < 3) {
+      await User.create([
+        { name: 'Adithya Customer', email: 'pittala@gmail.com', phone: '1234567890', password: hashed, location: { lat: 17.4120, lng: 78.4550 } },
+        { name: 'Bonda Customer', email: 'bonda@gmail.com', phone: '1231231234', password: hashed, location: { lat: 17.3950, lng: 78.5000 } },
+        { name: 'Rahul Customer', email: 'rahul@gmail.com', phone: '1234444444', password: hashed, location: { lat: 17.3600, lng: 78.4800 } }
+      ]);
+      console.log('👤 Users seeded');
+    }
+
+    // Seed some Bookings if needed
+    const bookingCount = await Booking.countDocuments();
+    if (bookingCount === 0) {
+      const users = await User.find().limit(3);
+      
+      const createdBookings = await Booking.create([
+        { userId: users[0]._id, service: 'Plumbing Leakage', category: 'Maintenance', price: 499, status: 'completed', scheduledTime: new Date(Date.now() - 86400000 * 2) },
+        { userId: users[1]._id, service: 'Deep Cleaning', category: 'Home Services', price: 1299, status: 'ongoing', scheduledTime: new Date() },
+        { userId: users[2]._id, service: 'Fan Repair', category: 'Maintenance', price: 299, status: 'pending', scheduledTime: new Date(Date.now() + 3600000) },
+        { userId: users[0]._id, service: 'AC Installation', category: 'Maintenance', price: 1500, status: 'completed', scheduledTime: new Date(Date.now() - 86400000 * 5) }
+      ]);
+
+      // Seed some Payments using the created bookings
+      await Payment.create([
+        { bookingId: createdBookings[0]._id, userId: users[0]._id, amount: 499, status: 'success', paymentMethod: 'UPI' },
+        { bookingId: createdBookings[3]._id, userId: users[0]._id, amount: 1500, status: 'success', paymentMethod: 'Card' }
+      ]);
+
+      console.log('📅 Bookings & Payments seeded');
     }
   } catch (err) {
     console.error('Seed error:', err);

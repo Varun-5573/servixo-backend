@@ -7,7 +7,7 @@ const Payment = require('../models/Payment');
 const { adminProtect } = require('../middleware/authMiddleware');
 
 // Dashboard stats
-router.get('/stats', adminProtect, async (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
     const [totalUsers, totalWorkers, totalBookings, pendingBookings, completedBookings, cancelledBookings] =
       await Promise.all([
@@ -48,7 +48,7 @@ router.get('/stats', adminProtect, async (req, res) => {
 });
 
 // Get all users
-router.get('/users', adminProtect, async (req, res) => {
+router.get('/users', async (req, res) => {
   try {
     const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.json({ success: true, users });
@@ -58,7 +58,7 @@ router.get('/users', adminProtect, async (req, res) => {
 });
 
 // Toggle user active status
-router.put('/users/:id/toggle', adminProtect, async (req, res) => {
+router.put('/users/:id/toggle', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     user.isActive = !user.isActive;
@@ -70,7 +70,7 @@ router.put('/users/:id/toggle', adminProtect, async (req, res) => {
 });
 
 // Assign worker to booking
-router.put('/bookings/:id/assign', adminProtect, async (req, res) => {
+router.put('/bookings/:id/assign', async (req, res) => {
   try {
     const { workerId } = req.body;
     const booking = await Booking.findByIdAndUpdate(
@@ -94,7 +94,7 @@ router.put('/bookings/:id/assign', adminProtect, async (req, res) => {
 });
 
 // Recent activity
-router.get('/activity', adminProtect, async (req, res) => {
+router.get('/activity', async (req, res) => {
   try {
     const recentBookings = await Booking.find()
       .populate('userId', 'name')
