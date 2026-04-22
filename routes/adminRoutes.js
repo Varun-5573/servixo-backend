@@ -97,7 +97,7 @@ router.put('/bookings/:id/assign', async (req, res) => {
 router.get('/activity', async (req, res) => {
   try {
     const recentBookings = await Booking.find()
-      .populate('userId', 'name')
+      .populate('userId', 'name location')
       .populate('workerId', 'name')
       .sort({ createdAt: -1 })
       .limit(10);

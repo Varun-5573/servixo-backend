@@ -41,29 +41,56 @@ router.get('/active-customers', async (req, res) => {
   try {
     const Booking = require('../models/Booking');
     
-    // Find active bookings
+    // Find ALL active bookings sorted newest first
     const activeBookings = await Booking.find({ 
-      status: { $in: ['pending', 'accepted', 'ongoing', 'accepted'] } 
-    }).populate('userId', 'name phone location profileImage');
+      status: { $in: ['pending', 'accepted', 'ongoing'] } 
+    })
+    .populate('userId', 'name phone location profileImage')
+    .sort({ createdAt: -1 }); // newest first
 
-    const customers = activeBookings.map(b => {
-      // Use booking location first, fallback to user profile location
-      const lat = b.location?.lat || b.userId?.location?.lat;
-      const lng = b.location?.lng || b.userId?.location?.lng;
+    // Deduplicate: keep only the LATEST booking per user
+    const seenUsers = new Set();
+    const latestBookings = [];
+    for (const b of activeBookings) {
+      const uid = b.userId?._id?.toString() || b._id.toString();
+      if (!seenUsers.has(uid)) {
+        seenUsers.add(uid);
+        latestBookings.push(b);
+      }
+    }
+
+    const customers = latestBookings.map(b => {
+      // Prefer booking GPS (captured at booking time) over user profile location
+      const bLat = b.location?.lat;
+      const bLng = b.location?.lng;
+      const uLat = b.userId?.location?.lat;
+      const uLng = b.userId?.location?.lng;
+
+      // Booking location takes priority; fallback to user profile
+      let lat = (bLat && bLat !== 0) ? bLat : (uLat && uLat !== 0 ? uLat : null);
+      let lng = (bLng && bLng !== 0) ? bLng : (uLng && uLng !== 0 ? uLng : null);
+
+      const hasGps = !!(lat && lng);
+
+      console.log(`📍 Customer: ${b.userId?.name} | bookingLat: ${bLat} | userLat: ${uLat} | final: ${lat}, ${lng}`);
 
       return {
         _id: b.userId?._id || b._id,
         name: b.userId?.name || 'Customer',
-        location: { lat, lng },
+        location: hasGps ? { lat, lng } : null,
+        hasGps,
         phone: b.userId?.phone,
         service: b.service,
         bookingId: b._id,
+        address: b.location?.address || '',
         status: b.status
       };
-    }).filter(c => c.location.lat && c.location.lng); 
+    });
     
+    console.log(`\n📊 Active customers: ${customers.length} (${customers.filter(c=>c.hasGps).length} with GPS)`);
     res.json({ success: true, customers });
   } catch (err) {
+    console.error('active-customers error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });

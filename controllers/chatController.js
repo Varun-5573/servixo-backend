@@ -30,16 +30,28 @@ const sendMessage = async (req, res) => {
       io.to(`worker_${receiverId}`).emit('receive_message', msg);
       io.to('admin_room').emit('receive_message', msg);
 
-      // --- AUTOMATIC CHATBOT INTEGRATION ---
+      // --- AUTOMATIC CHATBOT INTEGRATION (Advanced AI Logic) ---
       if (receiverId === 'admin' && (senderType === 'user' || senderType === 'worker')) {
+        // 1. Show Typing Animation on Phone
+        io.to(`user_${req.user.id}`).emit('receive_message', {
+          senderId: 'bot',
+          message: '...',
+          senderType: 'bot',
+          createdAt: new Date()
+        });
+
         setTimeout(async () => {
-          let botMsg = "Hello! I am the Servixo Support Bot 🤖. How can I assist you today?";
+          let botMsg = "Hello! I am the Servixo AI Support Bot 🤖. How can I help you today?";
           
           const msgLower = message.toLowerCase();
-          if (msgLower.includes("problem") || msgLower.includes("issue")) {
-            botMsg = "I'm sorry to hear you're facing a problem. Our human admins in the control panel have been notified and will review this chat shortly! Could you provide more details?";
-          } else if (msgLower.includes("price") || msgLower.includes("cost")) {
-            botMsg = "Our pricing is transparent! You can view the exact cost of each service right on the Home Screen before booking.";
+          if (msgLower.includes("problem") || msgLower.includes("issue") || msgLower.includes("not working")) {
+            botMsg = "I'm sorry to hear that! Our human support team has been alerted. While they join, could you tell me more about the problem?";
+          } else if (msgLower.includes("price") || msgLower.includes("cost") || msgLower.includes("how much")) {
+            botMsg = "All our prices are fixed and shown upfront in the app. Just select a service to see the cost!";
+          } else if (msgLower.includes("hello") || msgLower.includes("hi")) {
+            botMsg = "Hi there! I'm your Servixo AI. I can help you with bookings, tracking experts, or payments. What do you need today?";
+          } else if (msgLower.includes("track") || msgLower.includes("where")) {
+            botMsg = "You can track your assigned expert live on the map in the 'My Bookings' section!";
           }
           
           const autoReply = await Message.create({
@@ -49,9 +61,10 @@ const sendMessage = async (req, res) => {
             senderType: 'admin'
           });
           
+          // 2. Remove Typing and send Actual Message
           io.to(`user_${req.user.id}`).emit('receive_message', autoReply);
           io.to('admin_room').emit('receive_message', autoReply);
-        }, 0);
+        }, 1500); // 1.5 second delay for realistic feel
       }
     }
 

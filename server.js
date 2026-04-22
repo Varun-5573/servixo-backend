@@ -17,6 +17,7 @@ const io = new Server(server, {
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
 // Make io accessible in routes
 app.set('io', io);
@@ -88,22 +89,42 @@ io.on('connection', (socket) => {
     } catch (e) {}
   });
 
-  // User live location update
+  // User live location update (Swiggy/Zomato style broadcast)
   socket.on('user_location_update', async (data) => {
-    const { userId, lat, lng } = data;
-    console.log(`📍 Live GPS from User ${userId}: ${lat}, ${lng}`);
-    // Broadcast to admin
-    io.to('admin_room').emit('user_location', { userId, lat, lng });
-
-    // Update in DB
+    const { userId, lat, lng, bookingId } = data;
+    
     try {
       const User = require('./models/User');
-      await User.findByIdAndUpdate(userId, {
-        'location.lat': lat,
-        'location.lng': lng
+      const Booking = require('./models/Booking');
+      
+      const user = await User.findById(userId);
+      let serviceName = 'Service';
+      
+      // If we have a booking ID, get the service name
+      if (bookingId) {
+        const booking = await Booking.findById(bookingId);
+        if (booking) serviceName = booking.service;
+      }
+
+      // Broadcast RICH data to admin
+      io.to('admin_room').emit('user_location', { 
+        userId, 
+        name: user ? user.name : 'Customer',
+        service: serviceName,
+        bookingId,
+        lat, 
+        lng 
       });
+
+      // Update in DB
+      if (user) {
+        await User.findByIdAndUpdate(userId, {
+          'location.lat': lat,
+          'location.lng': lng
+        });
+      }
     } catch (e) {
-      console.error('Error updating user location:', e);
+      console.error('Error in user location broadcast:', e);
     }
   });
 
@@ -186,37 +207,38 @@ const initDB = async () => {
     const { MongoMemoryServer } = require('mongodb-memory-server');
     const mongoServer = await MongoMemoryServer.create();
     mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
+    console.log('✅ Connected to In-Memory MongoDB');
+    await autoSeed();
+    server.listen(process.env.PORT || 5000, '0.0.0.0', () => {
+      console.log(`🚀 Servixo Server running on port ${process.env.PORT || 5000} [In-Memory]`);
+    });
+    return;
   }
   
-  mongoose.connect(mongoUri)
-    .then(async () => {
-      console.log('✅ MongoDB Connected');
-      
-      // Seed default Test Worker and User if DB is empty
-      await autoSeed();
-
-      server.listen(process.env.PORT || 5000, '0.0.0.0', () => {
-        console.log(`🚀 Servixo Server running on port ${process.env.PORT || 5000}`);
-      });
-    })
-    .catch(async (err) => {
-      console.error('❌ MongoDB primary connection error:', err.message);
-      console.log('⚠️ Falling back to In-Memory MongoDB for local testing...');
-      try {
-        const { MongoMemoryServer } = require('mongodb-memory-server');
-        const mongoServer = await MongoMemoryServer.create();
-        const fallbackUri = mongoServer.getUri();
-        await mongoose.connect(fallbackUri);
-        console.log('✅ Connected to In-Memory MongoDB');
-        await autoSeed();
-        server.listen(process.env.PORT || 5000, '0.0.0.0', () => {
-          console.log(`🚀 Servixo Server running on port ${process.env.PORT || 5000} (In-Memory)`);
-        });
-      } catch (fallbackErr) {
-        console.error('❌ Failed to start even with In-Memory DB:', fallbackErr.message);
-        process.exit(1);
-      }
+  const startServer = async (uri, label) => {
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
+    console.log(`✅ MongoDB Connected (${label})`);
+    await autoSeed();
+    server.listen(process.env.PORT || 5000, '0.0.0.0', () => {
+      console.log(`🚀 Servixo Server running on port ${process.env.PORT || 5000} [${label}]`);
     });
+  };
+
+  try {
+    await startServer(mongoUri, 'Atlas');
+  } catch (err) {
+    console.error('❌ MongoDB Atlas failed:', err.message);
+    console.log('⚠️ Falling back to In-Memory MongoDB...');
+    try {
+      const { MongoMemoryServer } = require('mongodb-memory-server');
+      const mongoServer = await MongoMemoryServer.create();
+      await startServer(mongoServer.getUri(), 'In-Memory');
+    } catch (fallbackErr) {
+      console.error('❌ Failed to start with In-Memory DB:', fallbackErr.message);
+      process.exit(1);
+    }
+  }
 };
 
 const autoSeed = async () => {
@@ -270,10 +292,10 @@ const autoSeed = async () => {
       const users = await User.find().limit(3);
       
       const createdBookings = await Booking.create([
-        { userId: users[0]._id, service: 'Plumbing Leakage', category: 'Maintenance', price: 499, status: 'completed', scheduledTime: new Date(Date.now() - 86400000 * 2) },
-        { userId: users[1]._id, service: 'Deep Cleaning', category: 'Home Services', price: 1299, status: 'ongoing', scheduledTime: new Date() },
-        { userId: users[2]._id, service: 'Fan Repair', category: 'Maintenance', price: 299, status: 'pending', scheduledTime: new Date(Date.now() + 3600000) },
-        { userId: users[0]._id, service: 'AC Installation', category: 'Maintenance', price: 1500, status: 'completed', scheduledTime: new Date(Date.now() - 86400000 * 5) }
+        { userId: users[0]._id, service: 'Plumbing Leakage', category: 'Maintenance', price: 499, status: 'ongoing', scheduledTime: new Date(), location: { address: '12 MG Road, Hyderabad', lat: 17.4120, lng: 78.4550 } },
+        { userId: users[1]._id, service: 'Deep Cleaning', category: 'Home Services', price: 1299, status: 'pending', scheduledTime: new Date(), location: { address: '45 Banjara Hills, Hyderabad', lat: 17.3950, lng: 78.5000 } },
+        { userId: users[2]._id, service: 'Fan Repair', category: 'Maintenance', price: 299, status: 'accepted', scheduledTime: new Date(Date.now() + 3600000), location: { address: '78 Jubilee Hills, Hyderabad', lat: 17.3600, lng: 78.4800 } },
+        { userId: users[0]._id, service: 'AC Installation', category: 'Maintenance', price: 1500, status: 'completed', scheduledTime: new Date(Date.now() - 86400000 * 5), location: { address: '12 MG Road, Hyderabad', lat: 17.4120, lng: 78.4550 } }
       ]);
 
       // Seed some Payments using the created bookings

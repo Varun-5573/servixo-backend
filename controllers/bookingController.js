@@ -36,9 +36,28 @@ const createBooking = async (req, res) => {
       await booking.save();
     }
 
-    // Notify admin via socket
+    // Notify admin via socket — populate first so dashboard gets full data
     const io = req.app.get('io');
-    if (io) io.to('admin_room').emit('new_booking', booking);
+    if (io) {
+      const populatedBooking = await Booking.findById(booking._id)
+        .populate('userId', 'name phone location')
+        .populate('workerId', 'name phone');
+      io.to('admin_room').emit('new_booking', populatedBooking);
+      console.log(`📡 Emitted new_booking to admin_room: ${booking._id}`);
+
+      // Also broadcast user location to map if booking has location
+      if (location?.lat && location?.lng) {
+        io.to('admin_room').emit('user_location', {
+          userId: req.user.id,
+          lat: location.lat,
+          lng: location.lng,
+          name: populatedBooking.userId?.name,
+          service: service,
+          bookingId: booking._id,
+        });
+        console.log(`📍 User location broadcast to admin map: ${req.user.id}`);
+      }
+    }
 
     res.status(201).json({ success: true, booking });
   } catch (err) {
